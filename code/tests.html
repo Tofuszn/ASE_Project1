@@ -1,0 +1,155 @@
+<!doctype html>
+<html>
+  <meta charset="utf-8" />
+  <title>API Tests</title>
+  <body>
+    <h1>Dealership API Tester</h1>
+
+    <section>
+      <h3>Login</h3>
+      <button onclick="login()">Login as admin</button>
+      <pre id="loginOut"></pre>
+    </section>
+
+    <section>
+      <h3>Cars</h3>
+      <button onclick="listCars()">List Cars</button>
+      <button onclick="createCar()">Create Car (secured)</button>
+      <button onclick="updateCar()">Update Car (secured)</button>
+      <button onclick="deleteCar()">Delete Car (secured)</button>
+      <pre id="carsOut"></pre>
+    </section>
+
+    <section>
+      <h3>Sales</h3>
+      <button onclick="listSales()">List Sales</button>
+      <button onclick="createSale()">Create Sale (secured)</button>
+      <pre id="salesOut"></pre>
+    </section>
+
+    <script>
+      const origin = window.location.origin;
+      const BASE = origin && origin.startsWith('http')
+        ? 'api.php'
+        : 'http://localhost:3000/api.php';
+      let TOKEN = '';
+
+      function requireToken() {
+        if (!TOKEN) {
+          alert('Login first to obtain a token.');
+          throw new Error('No token');
+        }
+      }
+
+      async function login() {
+        try {
+          const endpoint = `${BASE}?resource=auth`;
+          const absoluteUrl = new URL(endpoint, window.location.href).toString();
+          const r = await fetch(endpoint, {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({username: 'admin', password: 'Carlo'})
+          });
+          const bodyText = await r.text();
+          let j;
+          try {
+            j = JSON.parse(bodyText);
+          } catch (err) {
+            j = { error: 'Non-JSON response', body: bodyText };
+          }
+          if (!r.ok || !j.token) {
+            TOKEN = '';
+            alert(`Login failed (${r.status}) @ ${absoluteUrl}: ${j.error || 'No token returned'}`);
+          } else {
+            TOKEN = j.token;
+          }
+          document.getElementById('loginOut').textContent = JSON.stringify(j, null, 2);
+        } catch (error) {
+          TOKEN = '';
+          const endpoint = `${BASE}?resource=auth`;
+          const absoluteUrl = new URL(endpoint, window.location.href).toString();
+          const msg = `Login error (fetch to ${absoluteUrl}): ${error}`;
+          alert(msg);
+          document.getElementById('loginOut').textContent = msg;
+        }
+      }
+
+      async function listCars(){
+        const r = await fetch(`${BASE}?resource=cars`);
+        document.getElementById('carsOut').textContent = JSON.stringify(await r.json(), null, 2);
+      }
+      async function createCar(){
+        try { requireToken(); } catch { return; }
+        const make = prompt('Make:', 'Toyota');
+        if (!make) return;
+        const model = prompt('Model:', 'Supra');
+        if (!model) return;
+        const year = prompt('Year:', '2021');
+        if (!year) return;
+        const price = prompt('Price:', '55000');
+        if (!price) return;
+        const r = await fetch(`${BASE}?resource=cars`, {
+          method:'POST',
+          headers:{'Content-Type':'application/json','Authorization':`Bearer ${TOKEN}`},
+          body: JSON.stringify({
+            make,
+            model,
+            year: Number(year),
+            price: Number(price)
+          })
+        });
+        document.getElementById('carsOut').textContent = JSON.stringify(await r.json(), null, 2);
+        await listCars();
+      }
+
+      async function updateCar(){
+        try { requireToken(); } catch { return; }
+        const id = prompt('Car ID to update:');
+        if (!id) return;
+        const price = prompt('New price:', '54000');
+        if (!price) return;
+        const payload = { price: Number(price) };
+        const r = await fetch(`${BASE}?resource=cars&id=${encodeURIComponent(id)}`, {
+          method:'PUT',
+          headers:{'Content-Type':'application/json','Authorization':`Bearer ${TOKEN}`},
+          body: JSON.stringify(payload)
+        });
+        document.getElementById('carsOut').textContent = JSON.stringify(await r.json(), null, 2);
+        await listCars();
+      }
+
+      async function deleteCar(){
+        try { requireToken(); } catch { return; }
+        const id = prompt('Car ID to delete:');
+        if (!id) return;
+        const r = await fetch(`${BASE}?resource=cars&id=${encodeURIComponent(id)}`, {
+          method:'DELETE',
+          headers:{'Authorization':`Bearer ${TOKEN}`}
+        });
+        document.getElementById('carsOut').textContent = JSON.stringify(await r.json(), null, 2);
+        await listCars();
+      }
+
+      async function listSales(){
+        const r = await fetch(`${BASE}?resource=sales`);
+        document.getElementById('salesOut').textContent = JSON.stringify(await r.json(), null, 2);
+      }
+      async function createSale(){
+        try { requireToken(); } catch { return; }
+        const carId = prompt('Car ID to record sale for:', '1');
+        if (!carId) return;
+        const customer = prompt('Customer name:', 'Jane Doe');
+        if (!customer) return;
+        const price = prompt('Sale price:', '53500');
+        if (!price) return;
+        const r = await fetch(`${BASE}?resource=sales`, {
+          method:'POST',
+          headers:{'Content-Type':'application/json','Authorization':`Bearer ${TOKEN}`},
+          body: JSON.stringify({car_id:Number(carId), customer_name:customer, sale_price:Number(price)})
+        });
+        document.getElementById('salesOut').textContent = JSON.stringify(await r.json(), null, 2);
+        await listSales();
+      }
+    </script>
+  </body>
+</html>
