@@ -334,7 +334,7 @@ server {
 ---
 
 # GitHub Link
-- Link: `placeholder`
+- Link: `https://github.com/Tofuszn/ASE_Project1`
 
 ---
 
