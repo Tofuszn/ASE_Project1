@@ -129,4 +129,4 @@ Total points earned in this section:
 | 🔹 REST API Implementation | 130     | [ 130 /130] |
 | 🔹 Tutorial Slides         | 50      | [ 50 /50]  |
 | 🔹 NGINX Deployment        | 20      | [ 20 /20]  |
-| **Total**                  | **150** | [ 150 /150] |
+| **Total**                  | **200** | [ 200 / 200] |
